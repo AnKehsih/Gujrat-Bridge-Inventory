@@ -30,10 +30,12 @@ DISTRICTS = ROOT / "shapefiles-master/state_ut/gujarat/district/gujarat_district
 STATES = ROOT / "shapefiles-master/india/state_ut/india_state.json"
 OUT = ROOT / "output"
 
-# Sheet -> column index of (district, taluka, first coordinate, second coordinate, name, length, span config)
+# Sheet -> column index of each field used (the two sheets differ by two leading columns)
 SHEETS = {
-    "Major Bridge": dict(district=6, taluka=7, c1=17, c2=18, name=22, length=21, config=28, condition=41),
-    "Minor Bridge": dict(district=4, taluka=5, c1=15, c2=16, name=20, length=19, config=26, condition=39),
+    "Major Bridge": dict(district=6, taluka=7, subtype=11, c1=17, c2=18, length=21, name=22,
+                         year=26, carriageway=27, config=28, condition=41),
+    "Minor Bridge": dict(district=4, taluka=5, subtype=9, c1=15, c2=16, length=19, name=20,
+                         year=24, carriageway=25, config=26, condition=39),
 }
 FIRST_DATA_ROW = 4
 
@@ -123,7 +125,10 @@ def load_bridges():
             "district": raw[cols["district"]].fillna("").astype(str).str.strip().values,
             "taluka": raw[cols["taluka"]].values,
             "bridge_name": raw[cols["name"]].values,
+            "sub_type": raw[cols["subtype"]].values,
             "length_m": raw[cols["length"]].values,
+            "construction_year": raw[cols["year"]].values,
+            "carriageway_m": raw[cols["carriageway"]].values,
             "configuration": raw[cols["config"]].values,
             "condition": raw[cols["condition"]].values,
             "raw_coord_1": raw[cols["c1"]].values,

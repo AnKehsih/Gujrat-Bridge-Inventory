@@ -4,6 +4,44 @@ What was done in this repository, and why. Newest entries go at the top.
 
 ---
 
+## 2026-10-28: Bridge typologies for OpenSees (`scripts/classify_bridge_typology.py`)
+
+**Goal:** Group bridges that can share one OpenSees model, so a single parametric model (and its results) covers many bridges.
+
+### How a typology is defined
+**superstructure type | number of spans | governing (longest) span**. These three set the model's topology: element types, number of piers and span length.
+
+- **Superstructure type**: keywords in the "Bridge Configuration" and "Sub Type" text. Checked in priority order: causeway, pipe culvert, box girder, RCC box, arch, steel/truss, PSC girder, RCC T-beam/girder (including "deck slab"), voided slab, solid slab.
+- **Span count bins**: 1 · 2–3 · 4–6 · 7–12 · 13+.
+- **Span length bins**: ≤6 · 6–10 · 10–15 · 15–25 · 25–40 · >40 m.
+- **Design era** (Pre-1980 · 1980–2001 · 2002–2014 · 2015+) and **substructure material** (masonry/RCC) are kept as attributes. They are not part of the key. Within a typology they change material properties and member sizes, not the model's form. 2002 was chosen because the 2001 Bhuj earthquake led to revised seismic provisions.
+
+**Why these bins:** They follow common breaks in Indian practice: slabs up to ~10–12 m, T-beams ~12–25 m, PSC beyond that. The bins are also wide enough that each typology holds enough bridges to be worth modelling.
+
+### Parsing the span text
+The configuration column is free text written in dozens of formats: `Span-5*24.40`, `4 Span X 11.20 mt`, `3x8`, `2 span 6.0 mt`, `12 Mt. X 5 Span`, `LHS 3x24.20 | RHS 6x12`. The script finds every (count, span) group, adds up the counts and takes the longest span. Spans written in the text are kept even when they disagree with the total-length column. The span is what the model needs, and the total length is the less reliable of the two (it sometimes includes approaches, or has obvious typos such as 1 m). Those rows are flagged.
+
+| How the spans were found | Bridges |
+|---|--:|
+| Written in the text | 7,021 |
+| Written, but disagrees with total length (flagged) | 488 |
+| Span count only; span = length / count | 596 |
+| Span length only; count = length / span | 13 |
+| Not stated | 2,337 |
+
+**Assumption:** When the superstructure is not stated and the longest span is ≤12 m, the bridge is taken as an RCC solid slab (3,438 bridges, flagged `assumed`). That is the standard choice for short spans in Gujarat R&B practice. Without the assumption, those bridges couldn't be grouped at all.
+
+### Result
+- 10,455 bridges → 142 typologies. 7,689 bridges (74%) are in 110 fully defined typologies.
+- **24 typologies with ≥20 bridges cover 7,357 bridges (70%).** RCC solid slabs with 2–3 spans of 6–10 m (T01, 1,862 bridges) and ≤6 m (T02, 1,619) are the largest.
+- 2,766 bridges remain in "unknown" groups. They need GAD drawings or site data for the missing span arrangement or superstructure type.
+
+**Files:** `output/bridge_typology.md` (readable list), `output/bridge_typology.xlsx` (summary sheet plus every bridge with its typology ID), and the same data as CSVs. `scripts/plot_bridge_map.py` now also writes sub type, construction year and carriageway width into `bridges_geocoded.csv`.
+
+**Known limitations:** Keyword matching can be wrong. Some entries describe a "solid slab" with spans >15 m, which are probably girders. Spans below 2 m are probably culvert vents. Check the typologies you choose to model against a few GAD drawings first.
+
+---
+
 ## 2026-10-28: Bridge location map and OpenSees data check
 
 ### 1. Read the master data workbook
